@@ -15,10 +15,22 @@ public:
         m_Shape.setFillColor(sf::Color(rand() % 255,rand() % 255,rand() % 255));
         m_InitialPos = pos;        
     }
-    void Update(const sf::Time& ts, std::vector<bool>& grid){
+    void Update(const sf::Time& ts, std::vector<SandCorn>& sandCorns){
         if (!HitGround()) 
-            m_LifeTime = m_LifeTime + ts;
+            m_LifeTime += ts;
+            sf::Vector2f currentPos = m_Shape.getPosition();
+            // Check if new position will colide with any other sandcorn
             m_Shape.setPosition(m_Shape.getPosition().x, m_InitialPos.y + (0.5 * GRAVITY_ACC * m_LifeTime.asSeconds() *m_LifeTime.asSeconds()));
+            // for (std::vector<SandCorn>::reverse_iterator it = sandCorns.rbegin(); it != sandCorns.rend(); it++){                
+            //     if (it->Intersects(*this)){
+            //         m_Shape.setPosition(currentPos);
+            //         m_Shape.setFillColor(sf::Color::Red);
+            //         //   std::cout<< "Break" << std::endl;
+            //         break;
+            //     } 
+
+                
+            // }
            // std::cout << "Pos : " << m_Shape.getPosition().x << " , " <<  m_Shape.getPosition().y << std::endl;
     }
     
@@ -57,7 +69,7 @@ public:
         
         // update postion of all sand corns
         for (std::vector<SandCorn>::reverse_iterator it = m_SandCorns.rbegin(); it != m_SandCorns.rend(); it++){
-            it->Update(ts, m_Grid);
+            it->Update(ts, m_SandCorns);
         }
 
         SandCorn corn(sf::Vector2f(mPos.x - SAND_RAD *0.5f , mPos.y - SAND_RAD * 0.5f));
