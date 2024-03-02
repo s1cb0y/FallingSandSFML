@@ -18,27 +18,42 @@ public:
 
     void Update(sf::RenderWindow& window, const sf::Time& ts){
         
+        //get current mouse position
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
         sf::Event event;        
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
                 window.close();
+            if (event.type == sf::Event::MouseButtonPressed){
+                m_CreateSand = true;
+            }
+            if (event.type == sf::Event::MouseButtonReleased){
+                m_CreateSand = false;
+            }
         }
         
-        //get current mouse position
-        sf::Vector2i mousePos = sf::Mouse::getPosition(window);    
         // only create new sandcorn of mouse position is on screen
-        if (MouseOnScreen(mousePos)){                        
+        if (MouseOnScreen(mousePos) && m_CreateSand){
             // scale screen position to grid position
             m_Grid[mousePos.y / (SCAL_FACTOR_Y)][mousePos.x / (SCAL_FACTOR_X)] = true;
         }        
         
         // Update all sandcorn
-        for (int x = 0 ; x < GRID_X-2; x++){
-            for (int y = 0 ; y < GRID_Y-2; y++){
+        for (int x = 0 ; x < GRID_X-1; x++){
+            for (int y = 0 ; y < GRID_Y-1; y++){
                 if (m_GridBuffer[y][x] == true){
-                    if (m_GridBuffer[y+1][x] == false){
+                    if (m_GridBuffer[y+1][x] == false){ // space below is free -> just fall
                         m_Grid[y+1][x] = true;
+                        m_Grid[y][x]   = false;
+                    }
+                    else if (m_GridBuffer[y+1][x-1] == false && m_GridBuffer[y+1][x+1] == false){
+                        int random = rand() % 2;
+                        if (random == 0) // move left
+                            m_Grid[y+1][x-1] = true;
+                        if (random == 1) // move right
+                            m_Grid[y+1][x+1] = true;    
                         m_Grid[y][x]   = false;
                     }
                     else if (m_GridBuffer[y+1][x-1] == false){
@@ -78,6 +93,7 @@ public:
 private:         
     bool m_Grid[GRID_Y][GRID_X] = {false};
     bool m_GridBuffer[GRID_Y][GRID_X] = {false};
+    bool m_CreateSand = false;
     
 };
 
