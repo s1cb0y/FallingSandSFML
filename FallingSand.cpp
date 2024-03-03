@@ -38,32 +38,51 @@ public:
         if (MouseOnScreen(mousePos) && m_CreateSand){
             // scale screen position to grid position
             m_Grid[mousePos.y / (SCAL_FACTOR_Y)][mousePos.x / (SCAL_FACTOR_X)] = true;
+            m_SandCornLifeTime[mousePos.y / (SCAL_FACTOR_Y)][mousePos.x / (SCAL_FACTOR_X)] += ts.asMilliseconds();
         }        
         
         // Update all sandcorn
-        for (int x = 0 ; x < GRID_X-1; x++){
-            for (int y = 0 ; y < GRID_Y-1; y++){
+        for (int x = 0 ; x < GRID_X; x++){
+            for (int y = 0 ; y < GRID_Y-1; y++){ // Y-1 to simplify bottom case
                 if (m_GridBuffer[y][x] == true){
+                    // calculate new position based in s = 0.5* g * t * t
+                    float g = 9.81; // m/s2
+                    int y_new = 0.5* g * m_SandCornLifeTimeBuffer[y][x] / 1000 * m_SandCornLifeTimeBuffer[y][x] / 1000;
                     if (m_GridBuffer[y+1][x] == false){ // space below is free -> just fall
                         m_Grid[y+1][x] = true;
-                        m_Grid[y][x]   = false;
+                        m_Grid[y][x]   = false;                         
+                        m_SandCornLifeTime[y+1][x] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    else if (m_GridBuffer[y+1][x-1] == false && m_GridBuffer[y+1][x+1] == false){
+                    else if ((x-1 >= 0) && (m_GridBuffer[y+1][x-1] == false) && (x+1 < GRID_X) && (m_GridBuffer[y+1][x+1] == false)){
+                        m_SandCornLifeTime[y][x] += ts.asMilliseconds();
                         int random = rand() % 2;
-                        if (random == 0) // move left
+                        if (random == 0){ // move left
                             m_Grid[y+1][x-1] = true;
-                        if (random == 1) // move right
-                            m_Grid[y+1][x+1] = true;    
+                            m_SandCornLifeTime[y+1][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        }
+                        if (random == 1){ // move right
+                            m_Grid[y+1][x+1] = true;
+                            m_SandCornLifeTime[y+1][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        }
                         m_Grid[y][x]   = false;
+                        m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    else if (m_GridBuffer[y+1][x-1] == false){
+                    else if ((x-1 >= 0) && (m_GridBuffer[y+1][x-1] == false)){
+                        m_SandCornLifeTime[y][x] += ts.asMilliseconds();
                         m_Grid[y+1][x-1] = true;
+                        m_SandCornLifeTime[y+1][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         m_Grid[y][x]   = false;
+                        m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    else if (m_GridBuffer[y+1][x+1] == false){
+                    else if ((x+1 < GRID_X) && (m_GridBuffer[y+1][x+1] == false)){
+                        m_SandCornLifeTime[y][x] += ts.asMilliseconds();
                         m_Grid[y+1][x+1] = true;
+                        m_SandCornLifeTime[y+1][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         m_Grid[y][x]   = false;
+                        m_SandCornLifeTime[y][x] = 0.0f;
                     }
+                    //std::cout << "Life time : " << m_SandCornLifeTime[y][x]  << std::endl;
                 }
             }
         }
@@ -77,11 +96,16 @@ public:
             for (int x = 0 ; x < GRID_X; x++){
                 if (m_Grid[y][x]){
                     m_Shape.setFillColor(sf::Color(rand() % 255,rand() % 255,rand() % 255));
-                    // calculate position on screen            
+                    //m_Shape.setFillColor(sf::Color::Red);
+                    // calculate position on screen
+                    if (x * SCAL_FACTOR_X > WINDOW_X)
+                        std::cout << "BIGGER" << std::endl;
+
                     m_Shape.setPosition(x * SCAL_FACTOR_X, y * SCAL_FACTOR_Y);
                     window.draw(m_Shape);
                 }
                 m_GridBuffer[y][x] = m_Grid[y][x];
+                m_SandCornLifeTimeBuffer[y][x] = m_SandCornLifeTime[y][x];
             }
         }
     }
@@ -93,6 +117,8 @@ public:
 private:         
     bool m_Grid[GRID_Y][GRID_X] = {false};
     bool m_GridBuffer[GRID_Y][GRID_X] = {false};
+    float m_SandCornLifeTime[GRID_Y][GRID_X] = {0.0f};
+    float m_SandCornLifeTimeBuffer[GRID_Y][GRID_X] = {0.0f};
     bool m_CreateSand = false;
     
 };
