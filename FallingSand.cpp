@@ -41,48 +41,55 @@ public:
             m_SandCornLifeTime[mousePos.y / (SCAL_FACTOR_Y)][mousePos.x / (SCAL_FACTOR_X)] += ts.asMilliseconds();
         }        
         
-        // Update all sandcorn
+        // Update all sandcorns
         for (int x = 0 ; x < GRID_X; x++){
             for (int y = 0 ; y < GRID_Y-1; y++){ // Y-1 to simplify bottom case
                 if (m_GridBuffer[y][x] == true){
-                    // calculate new position based in s = 0.5* g * t * t
+                    // calculate new position based in s = 0.5* g * t * t                    
                     float g = 9.81; // m/s2
-                    int y_new = 0.5* g * m_SandCornLifeTimeBuffer[y][x] / 1000 * m_SandCornLifeTimeBuffer[y][x] / 1000;
-                    if (m_GridBuffer[y+1][x] == false){ // space below is free -> just fall
-                        m_Grid[y+1][x] = true;
-                        m_Grid[y][x]   = false;                         
-                        m_SandCornLifeTime[y+1][x] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
-                        m_SandCornLifeTime[y][x] = 0.0f;
+                    int y_delta =  0.5* g * m_SandCornLifeTimeBuffer[y][x] / 1000.0 * m_SandCornLifeTimeBuffer[y][x] / 1000.0;
+                    y_delta= (y_delta < 1) ? 1 : y_delta;
+                    int y_new = y + y_delta > GRID_Y-1 ? GRID_Y-1 : y + y_delta;
+
+                    int y_free          = GetNextFreeGridPos(y+1, y_new, x);
+                    int y_x_minus1_free = GetNextFreeGridPos(y+1, y_new, x-1);
+                    int y_x_plus1_free  = GetNextFreeGridPos(y+1, y_new, x+1);
+
+                    if (y_free > -1){ // space below is free -> just fall
+                        m_Grid[y_free][x] = true;
+                        m_Grid[y][x]     = false;                         
+                        m_SandCornLifeTime[y_free][x] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        m_SandCornLifeTime[y][x]     = 0.0f;
                     }
-                    else if ((x-1 >= 0) && (m_GridBuffer[y+1][x-1] == false) && (x+1 < GRID_X) && (m_GridBuffer[y+1][x+1] == false)){
+                    else if ((x-1 >= 0) && (y_x_minus1_free >-1 ) && 
+                             (x+1 < GRID_X) && (y_x_plus1_free > -1)){ // space below left and right is free -> fail randomly
                         m_SandCornLifeTime[y][x] += ts.asMilliseconds();
                         int random = rand() % 2;
                         if (random == 0){ // move left
-                            m_Grid[y+1][x-1] = true;
-                            m_SandCornLifeTime[y+1][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                            m_Grid[y_x_minus1_free][x-1] = true;
+                            m_SandCornLifeTime[y_x_minus1_free][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         }
                         if (random == 1){ // move right
-                            m_Grid[y+1][x+1] = true;
-                            m_SandCornLifeTime[y+1][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                            m_Grid[y_x_plus1_free][x+1] = true;
+                            m_SandCornLifeTime[y_x_plus1_free][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         }
                         m_Grid[y][x]   = false;
                         m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    else if ((x-1 >= 0) && (m_GridBuffer[y+1][x-1] == false)){
+                    else if ((x-1 >= 0) && (y_x_minus1_free > -1)){
                         m_SandCornLifeTime[y][x] += ts.asMilliseconds();
-                        m_Grid[y+1][x-1] = true;
-                        m_SandCornLifeTime[y+1][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        m_Grid[y_x_minus1_free][x-1] = true;
+                        m_SandCornLifeTime[y_x_minus1_free][x-1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         m_Grid[y][x]   = false;
                         m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    else if ((x+1 < GRID_X) && (m_GridBuffer[y+1][x+1] == false)){
+                    else if ((x+1 < GRID_X) && (y_x_plus1_free > -1)){
                         m_SandCornLifeTime[y][x] += ts.asMilliseconds();
-                        m_Grid[y+1][x+1] = true;
-                        m_SandCornLifeTime[y+1][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
+                        m_Grid[y_x_plus1_free][x+1] = true;
+                        m_SandCornLifeTime[y_x_plus1_free][x+1] = m_SandCornLifeTimeBuffer[y][x] + ts.asMilliseconds();
                         m_Grid[y][x]   = false;
                         m_SandCornLifeTime[y][x] = 0.0f;
                     }
-                    //std::cout << "Life time : " << m_SandCornLifeTime[y][x]  << std::endl;
                 }
             }
         }
@@ -113,7 +120,18 @@ public:
     bool MouseOnScreen(sf::Vector2i mousePos){
         return (mousePos.x >= 0 && mousePos.y >= 0 && mousePos.x < WINDOW_X && mousePos.y < WINDOW_Y);
     }
-
+private:
+    int GetNextFreeGridPos(int y_startIdx, int y_endIdx, int x){
+        int freePos = -1;
+        for (int y = y_startIdx; y <= y_endIdx; y++){
+            if (m_GridBuffer[y][x] == false){
+                freePos = y;
+            } else {
+                break;
+            }
+        }
+        return freePos;
+    }
 private:         
     bool m_Grid[GRID_Y][GRID_X] = {false};
     bool m_GridBuffer[GRID_Y][GRID_X] = {false};
