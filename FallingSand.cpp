@@ -19,8 +19,7 @@ public:
     void Update(sf::RenderWindow& window, const sf::Time& ts){
 
         sf::Event event;
-        while (window.pollEvent(event))
-        {
+        while (window.pollEvent(event)){
             if (event.type == sf::Event::Closed)
                 window.close();
             if (event.type == sf::Event::KeyPressed){
@@ -32,10 +31,8 @@ public:
                 }
             }
         }
-
         UpdateSand(window, ts);
         UpdateObstacles(window, ts);
-
     }
 
     void UpdateSand(sf::RenderWindow& window, const sf::Time& ts){
@@ -143,13 +140,9 @@ public:
                 if (m_GridObstacles[y][x]){
                     rectangle.setFillColor(sf::Color(sf::Color::White));
                     // calculate position on screen
-                    if (x * SCAL_FACTOR_X > WINDOW_X)
-                        std::cout << "BIGGER" << std::endl;
-
                     rectangle.setPosition(x * SCAL_FACTOR_X, y * SCAL_FACTOR_Y);
                     window.draw(rectangle);
                 }
-
             }
         }
     }
