@@ -157,6 +157,7 @@ public:
             for (int y = 0; y < GRID_Y; y++){
                 m_Grid[y][x] = false;
                 m_GridBuffer[y][x] = false;
+                m_GridObstacles[y][x] = false;
             }
         }
     }
