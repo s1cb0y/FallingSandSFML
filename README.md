@@ -1,7 +1,8 @@
 # Falling sand demo build with [SFML](https://github.com/SFML/SFML)
 
-## Build for linux
-Just execute `./build.sh` to build and run the game.
+## Build for any OS by using CMake
+`cmake -S . -B build -DCMAKE_BUILD_TYPE=Release`\
+`cmake --build build`
 
 ## Controls
 * Press and hold left mouse button to create new sand.
